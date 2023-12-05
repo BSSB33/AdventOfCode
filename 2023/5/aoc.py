@@ -1,4 +1,6 @@
+import sys
 import time
+from tqdm import tqdm
 
 def resolve(source, mappings):
     # seed 79
@@ -7,14 +9,12 @@ def resolve(source, mappings):
     # 52 50 48
 
     for dest, start, range in mappings:
-        end = start + range
-        if start <= source <= end:
-            diff = source - start
-            return dest + diff
+        if start <= source <= (start + range):
+            return dest + (source - start)
     return source
 
 
-def parse_data(path):
+def parse_data(path, seed_ranges=False):
     f = open(path, "r")
     seeds = [int(n) for n in f.readline().strip().split(": ")[1].split(" ")]
 
@@ -30,27 +30,32 @@ def parse_data(path):
         else:
             values.append([int(n) for n in line.split(" ")])
         mappings[key] = values
-    return seeds, mappings
+    
+    if seed_ranges:
+        seed_pairs = [seeds[i:i+2] for i in range(0, len(seeds), 2)]
+        for beginning, _range in seed_pairs:
+            print("Processing seed pair: ", (beginning, _range))
+            for seed in tqdm(range(beginning, beginning+_range)):
+                #print("Yielding: ", seed, mappings)
+                yield seed, mappings
+    else:
+        return seeds, mappings
 
 
-def task1(seeds, mappings):
-    locations = [] # Final numbers
-    for seed in seeds:
-        # print("Processing Seed: ", seed)
+def process(part2=False):
+    minimum = sys.maxsize
+    for seed, mappings in parse_data("input_mini.txt", part2):
         for mapping in mappings.keys():
-            # print(mappings[mapping])
             seed = resolve(seed, mappings[mapping])
-            # print("Resolved Seed: ", seed)
-        locations.append(seed)
-    return min(locations)
+        if seed < minimum:
+            minimum = seed
+    return minimum
     
 
 if __name__ == "__main__":    
     start_time = time.time()
 
-    seeds, mappings = parse_data("input.txt")
-    # print(seeds, mappings)
-    print(task1(seeds, mappings))
-    #print(task2(seeds, mappings))
+    print(process())
+    print(process(part2=True))
 
     print("--- %s seconds ---" % (time.time() - start_time))
